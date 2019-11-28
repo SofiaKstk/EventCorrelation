@@ -11,11 +11,14 @@ def updateFreq(event):
 	freq[event] += 1
 
 
-# def updateGraph(prevState, event):
-# 	if event not in graph:
-# 		graph[event] = {}
+def updateGraph(prevState, event):
+	if event not in graph:
+		graph[event] = {}
 
-# 	graph[prevState]
+	if event not in graph[prevState]:
+		graph[prevState][event] = 0
+	graph[prevState][event] += 1
+
 
 
 events = pd.read_csv("eventVector.csv", header=None)
@@ -29,8 +32,8 @@ freq[event] = 1
 for i in events[1:]:
 	prevState = event
 	event = np.array2string(i, separator=',')
-	# updateGraph(prevState, event)
+	updateGraph(prevState, event)
 	updateFreq(event)
 	t += 1
 	#probability = freq/t
-print(freq['[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]'])
+print(graph['[0,0,0,0,0,0,1,0,0,0,1,0,0,1,0,0,1,0,1,0,0,0,0,1,0,0,0,0,0]'])
