@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 
-t = 0
 graph = {}
 freq = {}
 
@@ -19,21 +18,72 @@ def updateGraph(prevState, event):
 		graph[prevState][event] = 0
 	graph[prevState][event] += 1
 
-
-
 events = pd.read_csv("eventVector.csv", header=None)
 events = np.array(events)
+train = events[:2000]
+test = events[2000:]
 
-#for first event vector
-event = np.array2string(events[0], separator=',')
+#FIRST VECTOR
+event = ''.join(map(str,events[0]))
 graph[event] = {}
 freq[event] = 1
 
-for i in events[1:]:
+
+#TRAINING DATA
+t = 0
+for i in train[1:]:
 	prevState = event
-	event = np.array2string(i, separator=',')
+	event = ''.join(map(str,i))
 	updateGraph(prevState, event)
 	updateFreq(event)
 	t += 1
 	#probability = freq/t
-print(graph['[0,0,0,0,0,0,1,0,0,0,1,0,0,1,0,0,1,0,1,0,0,0,0,1,0,0,0,0,0]'])
+
+#TESTING DATA
+f = open("predictions.txt", "w")
+f.write("PREDICTION\t\t/\t\tEVENT\n")
+
+#FIRST PREDICTION
+pred = max(graph[event], key=graph[event].get)
+
+zer = 0
+predictions = 0
+precision = 0
+exact = 0
+for i in test:
+	#NEW EVENT
+	prevState = event
+	event = ''.join(map(str,i))
+
+	entry = str(pred) + " / " + str(event) + "\n"
+
+	f.write(entry)
+
+	#CHECK IF PREDICTION WAS CORRECT
+	if pred:
+		s1 = int(pred, base=2)
+		s2 = int(event, base=2)
+		bitand = '{0:029b}'.format(s1 & s2)
+		if bitand == pred:
+			precision+=1
+			if s1 == s2:
+				exact+=1
+
+	#UPDATE GRAPH
+	updateGraph(prevState, event)
+	updateFreq(event)
+	t += 1
+
+	#CHECK IF ABLE TO MAKE PREDICTION
+	#print(event)
+	if graph[event]:
+		pred = max(graph[event], key=graph[event].get)
+		predictions+=1
+	else:
+		pred = None
+	
+	
+
+print(precision/predictions)
+print(exact/predictions)
+print(predictions)
