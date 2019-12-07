@@ -48,7 +48,7 @@ pred = max(graph[event], key=graph[event].get)
 
 zer = 0
 predictions = 0
-precision = 0
+match = 0
 exact = 0
 for i in test:
 	#NEW EVENT
@@ -65,7 +65,7 @@ for i in test:
 		s2 = int(event, base=2)
 		bitand = '{0:029b}'.format(s1 & s2)
 		if bitand == pred:
-			precision+=1
+			match+=1
 			if s1 == s2:
 				exact+=1
 
@@ -81,9 +81,9 @@ for i in test:
 		predictions+=1
 	else:
 		pred = None
-	
-	
 
-print(precision/predictions)
-print(exact/predictions)
-print(predictions)
+precision = exact/predictions
+recall = exact/len(test)
+
+print("Precision is: " + str(precision))
+print("Recall is "+ str(recall))
