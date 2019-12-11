@@ -1,34 +1,33 @@
 import pandas as pd
+import numpy as np
 
 data = pd.read_csv("DATASET_CMA_CGM_NERVAL_5min.csv") 
-
+data = data.iloc[:,:-1]
+data = np.array(data)
 #CUSUM
 
-x = data["DISPANCESLR"]
-
 #constants
-m = 13
-kpos = kneg = 6
+m = 20
+kpos = kneg = 10
 thpos = thneg = 30
 
-P = 0	#positive changes
-N = 0	#negative changes
-t = 0	#time
+P = np.zeros(len(data[0]))	#positive changes
+N = np.zeros(len(data[0]))	#negative changes
+s = np.zeros((len(data), len(data[0])))
 
-while (1):
-	spos = 0	#positive signal
-	sneg = 0	#negative signal
-	P = max(0, x[t] - (m+kpos) + P)
-	N = min(0, x[t] - (m-kneg) + N)
+for t in range(0,len(data)):
+	for col in range(0,len(data[0])):
+		spos = 0	#positive signal
+		sneg = 0	#negative signal
+		P[col] = max(0, data[t,col] - (m+kpos) + P[col])
+		N[col] = min(0, data[t,col] - (m-kneg) + N[col])
 
-	if (P > thpos):
-		spos = 1
-		P = N = 0
-	if (N < -thneg):
-		sneg = 1
-		P = N = 0
-	t += 1
-	
-	print(spos or sneg)
-	if (t == 19):
-		break	
+		if (P[col] > thpos):
+			spos = 1
+			P[col] = N[col] = 0
+		if (N[col] < -thneg):
+			sneg = 1
+			P[col] = N[col] = 0
+		s[t,col] = spos or sneg
+		# print(spos or sneg)
+np.savetxt('cusumEventVector.csv', s, fmt='%d', delimiter=',')
