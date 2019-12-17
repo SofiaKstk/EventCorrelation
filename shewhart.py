@@ -8,7 +8,7 @@ data = np.array(data)
 
 #constants
 k = data[0]
-k = abs(k*0.1)
+k = 1
 
 xprev = np.zeros(len(data[0]))
 sprev = np.zeros(len(data[0]))
@@ -21,8 +21,8 @@ for t in range(0,len(data)):
 		xcurr[col] = xprev[col] + (data[t,col]-xprev[col])/(t+1)
 		scurr[col] = math.sqrt( (1/(t+1)) * (t*(sprev[col]**2) + (data[t,col]-xcurr[col])*(data[t,col]-xprev[col]) ))
 		
-		UCL = xcurr[col] + k[col]*scurr[col]
-		LCL = xcurr[col] - k[col]*scurr[col]
+		UCL = xcurr[col] + k*scurr[col]
+		LCL = xcurr[col] - k*scurr[col]
 
 		if ((data[t,col] > UCL) or (data[t,col] < LCL)):
 			s[t][col] = 1

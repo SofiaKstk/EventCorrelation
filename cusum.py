@@ -5,19 +5,19 @@ data = pd.read_csv("DATASET_CMA_CGM_NERVAL_5min.csv")
 data = data.iloc[:,:-1]
 data = np.array(data)
 #CUSUM
-# average = np.zeros(len(data[0]))
-# for i in range(0,9):
-# 	for col in range(0, len(data[0])):
-# 		average[col] += data[i, col]
+average = np.zeros(len(data[0]))
+for i in range(0,9):
+	for col in range(0, len(data[0])):
+		average[col] += data[i, col]
 
-# average = average/10	
+average = average/10	
 
 #constants
 # m = average
-m = abs(data[0])
+m = abs(average)
 print(m)
 kpos = kneg = m/2
-thpos = thneg = 1.5*m
+thpos = thneg = 2*m
 
 f = open('test','a')
 
