@@ -1,3 +1,4 @@
+import random
 import pandas as pd
 import numpy as np
 from bitsets import bitset 
@@ -9,8 +10,6 @@ def powerset(lst):
     for x in lst:
         result.extend([subset + [x] for subset in result])
     return result
-
-graph = {}
 
 def updateGraph(prevPowSet, vertex, powerSet):
 	if vertex not in graph:
@@ -38,37 +37,67 @@ def updateGraph(prevPowSet, vertex, powerSet):
 
 #GET COLUMN NAMES OF ALL STREAMS
 columns = pd.read_csv("DATASET_CMA_CGM_NERVAL_5min.csv",  nrows = 0)
-columns = tuple(columns.iloc[:,:-11])
+columns = tuple(columns.iloc[:,:-1])
 streams = bitset('streams', columns)
 
+
+
+
 #GET BINARY STREAMS
-events = pd.read_csv("eventVector.csv", header=None)
-events = events.iloc[:,:-10]
-events = np.array(events)
-train = events[:3]
-test = events[2000:]
+# vectors = pd.read_csv("cusumEventVector.csv", header=None)
+vectors = pd.read_csv("shewhartEventVector.csv", header=None)
 
-#NOTE TO SELF: update when all streams included!!!!
-prevPowSet = []		
-for ev in train:
-	event = ''.join(map(str,ev))
-	# print(event)
+#KEEP K FIXED EVENTS FOR EACH EVENT VECTOR
+k = 5
+
+
+
+vectors = np.array(vectors)
+events = []
+
+
+for j in vectors:
+	event = ''.join(map(str,j))
+	ones = [n for n in range(0,len(event)) if event.find('1', n) == n]		#list of position of ones
+	if len(ones)>k:
+		rem = random.sample(ones,k=k)			#
+		event = list(event)
+		for i in list(set(ones) - set(rem)):
+			event[i] = '0'
+		event = ''.join(event)
+	events.append(event)
+
+
+w = 3
+prevPSets = []
+prevKeys = []
+
+#always store an empty element in the beginning
+prevPSets.append([])		
+
+for i in range(0,w-1):
+	selected = streams.frombits(events[i])
+	pSet = powerset(list(selected.members()))
+	if len(pSet) != 1:
+		pSet = pSet[1:]
+	prevPSets.append(pSet)
+	prevKeys.append(events[i])
+
+for event in events[w-1:]:
 	selected = streams.frombits(event)
-	# print(selected)
-	ps = powerset(list(selected.members()))
+	currPS = powerset(list(selected.members()))
+	if len(currPS) != 1:
+		currPS = currPS[1:]
+	prevPSets.append(currPS)
+	prevKeys.append(event)
+
+	graph = {}
+
+	for i in range(1, len(prevPSets)):
+		updateGraph(prevPSets[i-1], prevKeys[i-1], prevPSets[i] )
 
 
-	#skip empty set of powerset for non empty stream
-	if len(ps) != 1:
-		ps = ps[1:]
-	print(len(ps))
-	for i in range(0, len(ps)):
-		#add every vertex that should exist inside the graph
-		vertex = streams(ps[i]).bits()
-		# print(vertex)
-		updateGraph(prevPowSet, vertex, ps[i+1:])
+	prevKeys.pop(0)
+	prevPSets.pop(1)
 
-	prevPowSet = ps
-
-print(graph['0000000000000000100'])
 
