@@ -11,29 +11,28 @@ def powerset(lst):
         result.extend([subset + [x] for subset in result])
     return result
 
-def updateGraph(prevPowSet, vertex, powerSet):
-	if vertex not in graph:
-		graph[vertex] = {}
+# def updateGraph(prevPowSet, vertex, powerSet):
+# 	if vertex not in graph:
+# 		graph[vertex] = {}
 
-	#CONNECT VERTEX WITH PREVIOUS EVENT
-	for i in prevPowSet:
-		key = streams(i).bits()
-		if vertex not in graph[key]:
-			graph[key][vertex] = 0			#CHANGE 0, 1 s
-		graph[key][vertex] += 1
+# 	#CONNECT VERTEX WITH PREVIOUS EVENT
+# 	for i in prevPowSet:
+# 		key = streams(i).bits()
+# 		if vertex not in graph[key]:
+# 			graph[key][vertex] = 0			#CHANGE 0, 1 s
+# 		graph[key][vertex] += 1
 
-	#CONNECT VERTEX WITH THE REST OF THE EVENT'S VERTICES
-	for j in powerSet:
-		key = streams(j).bits()
-		if key not in graph[vertex]:
-			graph[vertex][key] = 0
-		graph[vertex][key] += 1
-		if key not in graph:
-			graph[key] = {}
-		if vertex not in graph[key]:
-			graph[key][vertex] = 0
-		graph[key][vertex] += 1
-
+# 	#CONNECT VERTEX WITH THE REST OF THE EVENT'S VERTICES
+# 	for j in powerSet:
+# 		key = streams(j).bits()
+# 		if key not in graph[vertex]:
+# 			graph[vertex][key] = 0
+# 		graph[vertex][key] += 1
+# 		if key not in graph:
+# 			graph[key] = {}
+# 		if vertex not in graph[key]:
+# 			graph[key][vertex] = 0
+# 		graph[key][vertex] += 1
 
 #GET COLUMN NAMES OF ALL STREAMS
 columns = pd.read_csv("DATASET_CMA_CGM_NERVAL_5min.csv",  nrows = 0)
@@ -60,7 +59,7 @@ for j in vectors:
 	event = ''.join(map(str,j))
 	ones = [n for n in range(0,len(event)) if event.find('1', n) == n]		#list of position of ones
 	if len(ones)>k:
-		rem = random.sample(ones,k=k)			#
+		rem = random.sample(ones,k=k)
 		event = list(event)
 		for i in list(set(ones) - set(rem)):
 			event[i] = '0'
@@ -71,9 +70,7 @@ for j in vectors:
 w = 3
 prevPSets = []
 prevKeys = []
-
-#always store an empty element in the beginning
-prevPSets.append([])		
+	
 
 for i in range(0,w-1):
 	selected = streams.frombits(events[i])
@@ -83,21 +80,50 @@ for i in range(0,w-1):
 	prevPSets.append(pSet)
 	prevKeys.append(events[i])
 
+prediction = (None, 0)
+exact = 0
+numOfPreds = 0
+
 for event in events[w-1:]:
+
+	if prediction[0] == event:
+		exact += 1
+	prediction = (None, 0)
+
+
 	selected = streams.frombits(event)
 	currPS = powerset(list(selected.members()))
+
 	if len(currPS) != 1:
 		currPS = currPS[1:]
 	prevPSets.append(currPS)
 	prevKeys.append(event)
 
-	graph = {}
+	powerList = []
+	powerList = list(set([tuple(item) for sublist in prevPSets for item in sublist]))
 
-	for i in range(1, len(prevPSets)):
-		updateGraph(prevPSets[i-1], prevKeys[i-1], prevPSets[i] )
 
+	
+
+	for item in powerList:
+		item = list(item)
+		curr = list(selected.members())
+		i = 0
+		while curr not in prevPSets[i]:				#moves forward until first current encounter
+			i += 1
+		itemCount = 0
+		idealCount = 0
+		for j in range(i, w):
+			if item in prevPSets[j]:
+				itemCount += 1
+			idealCount += (w-j)
+		if (itemCount/idealCount) > prediction[1]:
+			prediction = (item, itemCount/idealCount)
+	prediction = (streams(prediction[0]).bits(), prediction[1])
+	numOfPreds += 1
 
 	prevKeys.pop(0)
-	prevPSets.pop(1)
+	prevPSets.pop(0)
 
+print(exact/numOfPreds)		
 
