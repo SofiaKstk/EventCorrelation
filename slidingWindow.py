@@ -67,7 +67,7 @@ for j in vectors:
 	events.append(event)
 
 
-w = 3
+w = 5
 prevPSets = []
 prevKeys = []
 	
@@ -102,28 +102,38 @@ for event in events[w-1:]:
 	powerList = []
 	powerList = list(set([tuple(item) for sublist in prevPSets for item in sublist]))
 
+	for k in range(0,len(powerList)):
 
-	
-
-	for item in powerList:
-		item = list(item)
-		curr = list(selected.members())
-		i = 0
-		while curr not in prevPSets[i]:				#moves forward until first current encounter
-			i += 1
-		itemCount = 0
-		idealCount = 0
-		for j in range(i, w):
-			if item in prevPSets[j]:
-				itemCount += 1
-			idealCount += (w-j)
-		if (itemCount/idealCount) > prediction[1]:
-			prediction = (item, itemCount/idealCount)
+		item = list(powerList[k])
+		for l in range(k+1,len(powerList)):
+			
+			psItem = list(powerList[l])
+			if item == psItem:
+				continue
+			
+			i = 0
+			while item not in prevPSets[i]:				#moves forward until first current encounter
+				i += 1
+			
+			counter = psItemCount = idealCount = 0
+			for j in range(i, w):
+				# arithmitis
+				if psItem in prevPSets[j]:
+					counter += 1
+					psItemCount += counter
+				# paronomastis
+				if item in prevPSets[j]:
+					idealCount += (w-j)
+			prob = psItemCount/idealCount
+			# print(" prob "+str(prob))
+			if prob > prediction[1] and prob > (1/w):
+				prediction = (psItem, prob)
+		
 	prediction = (streams(prediction[0]).bits(), prediction[1])
 	numOfPreds += 1
+	print(event+" "+str(prediction[0])+" "+str(prediction[1]))
 
 	prevKeys.pop(0)
 	prevPSets.pop(0)
-
 print(exact/numOfPreds)		
 
