@@ -1,89 +1,133 @@
 import pandas as pd
 import numpy as np
+import random
 
-graph = {}
-freq = {}
 
-def updateFreq(event):
+def updateFreq(event, freq):
 	if event not in freq:
 		freq[event] = 0
 	freq[event] += 1
 
 
-def updateGraph(prevState, event):
+def updateGraph(prevState, event, graph):
 	if event not in graph:
 		graph[event] = {}
 
 	if event not in graph[prevState]:
 		graph[prevState][event] = 0
 	graph[prevState][event] += 1
+	
+def main(k, p, steps, file, algorithm="shewhart"):
+	graph = {}
+	# freq = {}
+	res = open(file, "w")
+	res.write("STEPWISE CORRELATION,\tFIXED "+str(k)+",\tPROBABILITY GREATER THAN "+str(p)+",\t")	
+	if k == 0:
+		csvFile = algorithm + "EventVector.csv"
+		res.write(algorithm+" ALGORITHM\n")
+	else:
+		csvFile = "randomKevents" + str(k) + ".csv"
+	events = pd.read_csv(csvFile, header=None, squeeze=True)
 
-events = pd.read_csv("eventVector.csv", header=None)
-events = np.array(events)
-train = events[:2000]
-test = events[2000:]
+	events = np.array(events)
+	train = events[:1000]
+	test = events[1000:]
 
-#FIRST VECTOR
-event = ''.join(map(str,events[0]))
-graph[event] = {}
-freq[event] = 1
+	#FIRST VECTOR
+	event = ''.join(map(str,events[0]))
+	graph[event] = {}
+	# freq[event] = 1
 
+	#TRAINING DATA
+	t = 0
+	for i in train[1:]:
+		prevState = event
+		event = ''.join(map(str,i))
+		updateGraph(prevState, event, graph)
+		# updateFreq(event, freq)
+		t += 1
 
-#TRAINING DATA
-t = 0
-for i in train[1:]:
-	prevState = event
-	event = ''.join(map(str,i))
-	updateGraph(prevState, event)
-	updateFreq(event)
-	t += 1
-	#probability = freq/t
-
-#TESTING DATA
-f = open("predictions.txt", "w")
-f.write("PREDICTION\t\t/\t\tEVENT\n")
-
-#FIRST PREDICTION
-pred = max(graph[event], key=graph[event].get)
-
-zer = 0
-predictions = 0
-match = 0
-exact = 0
-for i in test:
-	#NEW EVENT
-	prevState = event
-	event = ''.join(map(str,i))
-
-	entry = str(pred) + " / " + str(event) + "\n"
-
-	f.write(entry)
-
-	#CHECK IF PREDICTION WAS CORRECT
-	if pred:
-		s1 = int(pred, base=2)
-		s2 = int(event, base=2)
-		bitand = '{0:029b}'.format(s1 & s2)
-		if bitand == pred:
-			match+=1
-			if s1 == s2:
-				exact+=1
-
-	#UPDATE GRAPH
-	updateGraph(prevState, event)
-	updateFreq(event)
-	t += 1
-
-	#CHECK IF ABLE TO MAKE PREDICTION
-	#print(event)
+	#TESTING DATA
+	f = open("predictions.csv", "w")
+	#FIRST PREDICTION
+	predictions = 0
 	if graph[event]:
 		pred = max(graph[event], key=graph[event].get)
 		predictions+=1
 	else:
 		pred = None
+	entry = str(event)+" "+str(pred)+" "
+	if pred == None:
+		entry += "0\n"
+	else:
+		entry += str(graph[event][pred]/(t-1)) + "\n"
+	f.write(entry)
 
-precision = exact/predictions
-recall = exact/len(test)
+	for i in test:
 
-print("Precision is: " + str(precision))
-print("Recall is "+ str(recall))
+		#NEW EVENT
+		prevState = event
+		event = ''.join(map(str,i))
+		
+		#UPDATE GRAPH
+		updateGraph(prevState, event, graph)
+		# updateFreq(event, freq)
+
+		#CHECK IF ABLE TO MAKE PREDICTION
+		if graph[event]:
+			#random in case of a tie
+			maxi = max(graph[event].values())
+			if (maxi/t) >= p:
+				pred = random.choice([k for (k,v) in graph[event].items() if v==maxi])
+				predictions+=1
+			else:
+				pred = None
+		else:
+			pred = None
+
+		entry = str(event)+" "+str(pred)+" "
+		if pred == None:
+			entry += "0\n"
+		else:
+			entry += str(maxi/t) + "\n"
+		f.write(entry)
+		t += 1
+
+	f.close()
+
+	results = pd.read_csv("predictions.csv", delimiter=" ")
+	results = np.array(results)
+	res.write("PROBABILITY / TRUE/FALSE\n")
+
+	exact = 0
+	for i in range(0,len(results)):
+		pred = results[i,1]
+		prob = results[i,2]
+		flag = 0
+		for j in range(1,steps+1):
+			if i+j < len(results):
+				event = results[i+j,0]
+				# CHECK IF PREDICTION WAS CORRECT
+				if pred != "None":
+					s1 = int(pred, base=2)
+					s2 = int(event, base=2)
+					bitand = '{0:029b}'.format(s1 & s2)
+					if bitand == pred and s1 == s2:
+						exact+=1
+						flag = 1
+						break
+		
+		res.write(str(prob)+" "+str(flag)+"\n")
+
+	precision = exact/predictions
+	recall = exact/len(test)
+
+	print(exact)
+	print(predictions)
+	print("Precision is: " + str(precision))
+	res.write("Precision is: " + str(precision)+"\n")
+	print("Recall is "+ str(recall))
+	res.write("Recall is: " + str(recall)+"\n")
+
+if __name__ == "__main__":
+	main(5, 0, 3, "step503.txt")
