@@ -1,6 +1,7 @@
 import random
 import pandas as pd
 import numpy as np
+import sys
 from bitsets import bitset 
 from itertools import chain, combinations
 
@@ -13,6 +14,10 @@ def powerset(lst):
 
 # GET COLUMN NAMES OF ALL STREAMS
 def main(k, w, p, steps, file, algorithm = "shewhart"):
+	k = int(k)
+	w = int(w)
+	p = float(p)
+	steps = int(steps)
 	columns = pd.read_csv("DATASET_CMA_CGM_NERVAL_5min.csv",  nrows = 0)
 	columns = tuple(columns.iloc[:,:-1])
 	streams = bitset('streams', columns)
@@ -144,6 +149,8 @@ def main(k, w, p, steps, file, algorithm = "shewhart"):
 	print("Recall is "+ str(recall))
 	res.write("Recall is: " + str(recall)+"\n")
 
+
+
 if __name__ == "__main__":
-	main(5, 3, 0.1, 1, "sliding571.txt")
+	main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
 	# k,w,p,steps,file,algorithm

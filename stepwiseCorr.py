@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import random
+import sys
 
 
 def updateFreq(event, freq):
@@ -18,6 +19,10 @@ def updateGraph(prevState, event, graph):
 	graph[prevState][event] += 1
 	
 def main(k, p, steps, file, algorithm="shewhart"):
+	k = int(k)
+	print(k)
+	p = float(p)
+	steps = int(steps)
 	graph = {}
 	# freq = {}
 	res = open(file, "w")
@@ -26,7 +31,7 @@ def main(k, p, steps, file, algorithm="shewhart"):
 		csvFile = algorithm + "EventVector.csv"
 		res.write(algorithm+" ALGORITHM\n")
 	else:
-		csvFile = "randomKevents" + str(k) + ".csv"
+		csvFile = algorithm + "RandomKevents" + str(k) + ".csv"
 	events = pd.read_csv(csvFile, header=None, squeeze=True)
 
 	events = np.array(events)
@@ -130,4 +135,4 @@ def main(k, p, steps, file, algorithm="shewhart"):
 	res.write("Recall is: " + str(recall)+"\n")
 
 if __name__ == "__main__":
-	main(5, 0, 3, "step503.txt")
+	main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
