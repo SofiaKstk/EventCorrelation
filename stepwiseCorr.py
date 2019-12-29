@@ -20,7 +20,6 @@ def updateGraph(prevState, event, graph):
 	
 def main(k, p, steps, file, algorithm="shewhart"):
 	k = int(k)
-	print(k)
 	p = float(p)
 	steps = int(steps)
 	graph = {}
@@ -124,15 +123,17 @@ def main(k, p, steps, file, algorithm="shewhart"):
 		
 		res.write(str(prob)+" "+str(flag)+"\n")
 
-	precision = exact/predictions
-	recall = exact/len(test)
+	precision = (exact/predictions)*100
+	recall = (exact/len(test))*100
 
-	print(exact)
-	print(predictions)
-	print("Precision is: " + str(precision))
-	res.write("Precision is: " + str(precision)+"\n")
-	print("Recall is "+ str(recall))
-	res.write("Recall is: " + str(recall)+"\n")
+	# print(exact)
+	# print(predictions)
+	print("Precision is: " + str(precision) + "%")
+	res.write("Precision is: " + str(precision)+"%\n")
+	print("Recall is "+ str(recall) + "%")
+	res.write("Recall is: " + str(recall)+"%\n")
+
+
 
 if __name__ == "__main__":
 	main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])

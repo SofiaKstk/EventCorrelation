@@ -29,7 +29,7 @@ def main(k, w, p, steps, file, algorithm = "shewhart"):
 		csvFile = algorithm + "EventVector.csv"
 		res.write(algorithm+" ALGORITHM\n")
 	else:
-		csvFile = "randomKevents" + str(k) + ".csv"
+		csvFile = algorithm + "randomKevents" + str(k) + ".csv"
 	events = pd.read_csv(csvFile, header=None, squeeze=True)
 
 	events = np.array(events)
@@ -57,7 +57,6 @@ def main(k, w, p, steps, file, algorithm = "shewhart"):
 	entry = str(prevKeys[w-2])+" 0 0\n"
 	f.write(entry)
 	for event in events[w-1:]:
-
 		prediction = (None, 0)
 
 		# enter the current event to the table
@@ -142,15 +141,16 @@ def main(k, w, p, steps, file, algorithm = "shewhart"):
 		
 		res.write(str(prob)+" "+str(flag)+"\n")
 
-	precision = exact/numOfPreds
-	recall = recallExact/len(events[w-1:])
-	print("Precision is: " + str(precision))
-	res.write("Precision is: " + str(precision)+"\n")
-	print("Recall is "+ str(recall))
-	res.write("Recall is: " + str(recall)+"\n")
+	precision = (exact/numOfPreds)*100
+	recall = (recallExact/len(events[w-1:]))*100
+	print("Precision is: " + str(precision) + "%")
+	res.write("Precision is: " + str(precision) + "%\n")
+	print("Recall is "+ str(recall) + "%")
+	res.write("Recall is: " + str(recall) + "%\n")
 
 
 
 if __name__ == "__main__":
 	main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
+	# main(5,3,0.3,3,"results/sliding/step123456789.txt")
 	# k,w,p,steps,file,algorithm
