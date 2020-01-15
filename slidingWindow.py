@@ -4,6 +4,7 @@ import numpy as np
 import sys
 from bitsets import bitset 
 from itertools import chain, combinations
+from math import exp
 
 def powerset(lst):
     # the power set of the empty set has one element, the empty set
@@ -11,6 +12,14 @@ def powerset(lst):
     for x in lst:
         result.extend([subset + [x] for subset in result])
     return result
+
+def linearAgeing(k, n, i):
+	age = - 2*k*(i - 1)/(n - 1) + k + 1
+	return age
+
+def exponentialAgeing(k, i):
+	age = exp(-k*i)
+	return age
 
 # GET COLUMN NAMES OF ALL STREAMS
 def main(k, w, p, steps, file, algorithm = "shewhart"):
@@ -56,6 +65,7 @@ def main(k, w, p, steps, file, algorithm = "shewhart"):
 
 	entry = str(prevKeys[w-2])+" 0 0\n"
 	f.write(entry)
+	ageing = (None, 0, 0)
 	for event in events[w-1:]:
 		prediction = (None, 0)
 
@@ -100,9 +110,17 @@ def main(k, w, p, steps, file, algorithm = "shewhart"):
 				# get the maximum probability of all combinations
 				if prob > prediction[1] and prob >= p:
 					prediction = (psItem, prob)
+
 		if prediction[0] != None:
 			prediction = (streams(prediction[0]).bits(), prediction[1])
 			numOfPreds += 1
+
+		# even if it doesn't predict anything, get from previous predictions
+		if ageing[0] != None and ageing[1] > prediction[1]:
+			prediction = (ageing[0], ageing[1])
+			ageing = (ageing[0], ageing[1], 0)
+		if numOfPreds > 2:
+			ageing = (ageing[0], ageing[1]*linearAgeing(0.3,numOfPreds-1, ageing[2]), ageing[2]+1)
 
 		entry = str(event)+" "+str(prediction[0])+" "+str(prediction[1])+"\n"
 		f.write(entry)
@@ -151,6 +169,6 @@ def main(k, w, p, steps, file, algorithm = "shewhart"):
 
 
 if __name__ == "__main__":
-	main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
-	# main(5,3,0.3,3,"results/sliding/step123456789.txt")
+	# main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
+	main(5,3,0.3,3,"slid123456789.txt")
 	# k,w,p,steps,file,algorithm
