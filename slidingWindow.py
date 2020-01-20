@@ -40,7 +40,6 @@ def main(k, w, p, steps, ageingFunction, file, algorithm = "shewhart"):
 		csvFile = algorithm + "randomKevents" + str(k) + ".csv"
 	events = pd.read_csv(csvFile, header=None, squeeze=True)
 	events = np.array(events)
-	print(events[0])
 
 	if ageingFunction == "linear":
 		ageingFun = linearAgeing
@@ -50,7 +49,6 @@ def main(k, w, p, steps, ageingFunction, file, algorithm = "shewhart"):
 	# CONSTANTS
 	prevPSets = []
 	prevKeys = []
-	print(csvFile)
 	# PREPARE UP TO w-1 EVENT VECTORS
 	for i in range(0,w-1):
 		selected = streams.frombits(events[i])
