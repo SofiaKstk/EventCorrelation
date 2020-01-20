@@ -35,4 +35,4 @@ for t in range(0,len(data)):
 		xprev[col] = xcurr[col]
 		sprev[col] = scurr[col]
 
-np.savetxt('shewhartEventVector.csv', s, fmt='%d', delimiter=',')
+np.savetxt('shewhartEventVector.csv', s, fmt='%d', delimiter='')

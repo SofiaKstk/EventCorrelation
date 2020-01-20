@@ -45,4 +45,4 @@ for t in range(0,len(data)):
 			P[col] = N[col] = 0
 		s[t,col] = spos or sneg
 # f.close()
-np.savetxt('cusumEventVector.csv', s, fmt='%d', delimiter=',')
+np.savetxt('cusumEventVector.csv', s, fmt='%d', delimiter='')
