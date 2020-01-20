@@ -17,12 +17,12 @@ def linearAgeing(k, n, i):
 	age = - 2*k*(i - 1)/(n - 1) + k + 1
 	return age
 
-def exponentialAgeing(k, i):
+def exponentialAgeing(k, n, i):
 	age = exp(-k*i)
 	return age
 
 # GET COLUMN NAMES OF ALL STREAMS
-def main(k, w, p, steps, file, algorithm = "shewhart"):
+def main(k, w, p, steps, ageingFunction, file, algorithm = "shewhart"):
 	k = int(k)
 	w = int(w)
 	p = float(p)
@@ -33,15 +33,19 @@ def main(k, w, p, steps, file, algorithm = "shewhart"):
 
 	# GET k FIXED EVENT VECTORS
 	res = open(file, "w")
-	res.write("SLIDING WINDOW,\tWINDOW LENGTH "+str(w)+",\tFIXED "+str(k)+",\tPROBABILITY GREATER THAN "+str(p)+",\t")	
+	res.write("SLIDING WINDOW,\tWINDOW LENGTH "+str(w)+",\tFIXED "+str(k)+",\tPROBABILITY GREATER THAN "+str(p)+",\t"+ algorithm+" ALGORITHM\n,\t"+ageingFunction+" ageing\t")	
 	if k == 0:
 		csvFile = algorithm + "EventVector.csv"
-		res.write(algorithm+" ALGORITHM\n")
 	else:
 		csvFile = algorithm + "randomKevents" + str(k) + ".csv"
 	events = pd.read_csv(csvFile, header=None, squeeze=True)
 
 	events = np.array(events)
+
+	if ageingFunction == "linear":
+		ageingFun = linearAgeing
+	else:
+		ageingFun = exponentialAgeing
 
 	# CONSTANTS
 	prevPSets = []
@@ -120,7 +124,7 @@ def main(k, w, p, steps, file, algorithm = "shewhart"):
 			prediction = (ageing[0], ageing[1])
 			ageing = (ageing[0], ageing[1], 0)
 		if numOfPreds > 2:
-			ageing = (ageing[0], ageing[1]*linearAgeing(0.3,numOfPreds-1, ageing[2]), ageing[2]+1)
+			ageing = (ageing[0], ageing[1]*ageingFun(0.3,numOfPreds-1, ageing[2]), ageing[2]+1)
 
 		entry = str(event)+" "+str(prediction[0])+" "+str(prediction[1])+"\n"
 		f.write(entry)
@@ -169,6 +173,6 @@ def main(k, w, p, steps, file, algorithm = "shewhart"):
 
 
 if __name__ == "__main__":
-	# main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
-	main(5,3,0.3,3,"slid123456789.txt")
-	# k,w,p,steps,file,algorithm
+	main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6], sys.argv[7])
+	# main(5,3,0.3,3,"linear","slid123456789.txt")
+	# k,w,p,steps,ageing,file,algorithm
