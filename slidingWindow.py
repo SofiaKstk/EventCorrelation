@@ -22,7 +22,7 @@ def exponentialAgeing(k, n, i):
 	return age
 
 # GET COLUMN NAMES OF ALL STREAMS
-def main(k, w, p, steps, ageingFunction, file, algorithm = "shewhart"):
+def sliding(k, w, p, steps, ageingFunction, file, algorithm = "shewhart"):
 	k = int(k)
 	w = int(w)
 	p = float(p)
@@ -163,7 +163,10 @@ def main(k, w, p, steps, ageingFunction, file, algorithm = "shewhart"):
 		
 		res.write(str(prob)+" "+str(flag)+"\n")
 
-	precision = (exact/numOfPreds)*100
+	if numOfPreds == 0:
+		precision = 0
+	else:
+		precision = (exact/numOfPreds)*100
 	recall = (recallExact/len(events[w-1:]))*100
 	print("Precision is: " + str(precision) + "%")
 	res.write("Precision is: " + str(precision) + "%\n")
@@ -173,6 +176,6 @@ def main(k, w, p, steps, ageingFunction, file, algorithm = "shewhart"):
 
 
 if __name__ == "__main__":
-	main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6], sys.argv[7])
-	# main(5,3,0.3,3,"linear","slid123456789.txt")
+	sliding(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6], sys.argv[7])
+	# sliding(5,3,0.3,3,"linear","slid123456789.txt")
 	# k,w,p,steps,ageing,file,algorithm
