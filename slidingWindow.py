@@ -5,6 +5,10 @@ import sys
 from bitsets import bitset 
 from itertools import chain, combinations
 from math import exp
+from threading import Lock,get_ident
+import os
+
+mutex = Lock()
 
 def powerset(lst):
     # the power set of the empty set has one element, the empty set
@@ -63,7 +67,7 @@ def sliding(k, w, p, steps, ageingFunction, file, algorithm = "shewhart"):
 	prediction = (None, 0)
 	numOfPreds = 0
 
-	f = open("predictions.csv", "w")
+	f = open("predictions"+str(get_ident())+".csv", "w")
 
 	entry = str(prevKeys[w-2])+" 0 0\n"
 	f.write(entry)
@@ -133,7 +137,8 @@ def sliding(k, w, p, steps, ageingFunction, file, algorithm = "shewhart"):
 
 	f.close()
 
-	results = pd.read_csv("predictions.csv", delimiter=" ")
+	
+	results = pd.read_csv("predictions"+str(get_ident())+".csv", delimiter=" ")
 	results = np.array(results)
 	res.write("PROBABILITY / TRUE/FALSE\n")
 
@@ -143,6 +148,7 @@ def sliding(k, w, p, steps, ageingFunction, file, algorithm = "shewhart"):
 		pred = results[i,1]
 		prob = results[i,2]
 		flag = 0
+		mutex.acquire()
 		for j in range(1,steps+1):
 			if i+j < len(results):
 				event = results[i+j,0]
@@ -158,6 +164,7 @@ def sliding(k, w, p, steps, ageingFunction, file, algorithm = "shewhart"):
 						if int(bitand, base=2) <= binEvent:
 							recallExact += 1
 						break
+		mutex.release()
 		
 		res.write(str(prob)+" "+str(flag)+"\n")
 
@@ -170,6 +177,7 @@ def sliding(k, w, p, steps, ageingFunction, file, algorithm = "shewhart"):
 	res.write("Precision is: " + str(precision) + "%\n")
 	print("Recall is "+ str(recall) + "%")
 	res.write("Recall is: " + str(recall) + "%\n")
+	os.remove("predictions"+str(get_ident())+".csv")
 
 
 

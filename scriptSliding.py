@@ -1,20 +1,17 @@
-import os
 import numpy as np
-import os.path
 from os import path
 import threading
 from slidingWindow import sliding
+import time
 
 def thread_function(k,w,p,step,ageing,file, algorithm):
 	if str(path.exists(file)) != "True":
-		# subprocess.call(["slidingWindow.py",str(k), str(w), str(p), str(step), ageing, file, algorithm], shell=True)
-		#os.system("./slidingWindow.py " + str(k) + " " + str(w) + " " + str(p) + " " + str(step)+ " " + ageing + " " + file + " " + algorithm)
 		sliding(k,w,p,step,ageing,file,algorithm)
 		# k,w,p,steps,file,algorithm
 
 
 if __name__ == "__main__":
-	for k in range(0, 8):
+	for k in range(1, 8):
 		for w in range(3, 8):
 			for step in [1, 2, 3]:
 				for algorithm in ["cusum", "shewhart"]:
@@ -27,6 +24,6 @@ if __name__ == "__main__":
 							x = threading.Thread(target=thread_function, args=(k,w,p,step,ageing,file,algorithm))
 							threads.append(x)
 							x.start()
-
+							time.sleep(1)
 						for thread in threads:
 							thread.join()			
