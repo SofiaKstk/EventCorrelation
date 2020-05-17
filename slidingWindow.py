@@ -31,17 +31,18 @@ def sliding(k, w, p, steps, ageingFunction, file, algorithm = "shewhart"):
 	w = int(w)
 	p = float(p)
 	steps = int(steps)
-	columns = pd.read_csv("DATASET_CMA_CGM_NERVAL_5min.csv",  nrows = 0)
+	columns = pd.read_csv("detectionAlgorithms/DATASET_CMA_CGM_NERVAL_5min.csv",  nrows = 0)
 	columns = tuple(columns.iloc[:,:-1])
 	streams = bitset('streams', columns)
 
 	# GET k FIXED EVENT VECTORS
 	res = open(file, "w")
 	res.write("SLIDING WINDOW,\tWINDOW LENGTH "+str(w)+",\tFIXED "+str(k)+",\tPROBABILITY GREATER THAN "+str(p)+",\t"+ algorithm+" ALGORITHM\n,\t"+ageingFunction+" ageing\t")	
+	csvFile = "eventVectors/" + algorithm + "/"	
 	if k == 0:
-		csvFile = algorithm + "EventVector.csv"
+		csvFile = csvFile + algorithm + "EventVector.csv"
 	else:
-		csvFile = algorithm + "randomKevents" + str(k) + ".csv"
+		csvFile = csvFile + algorithm + "randomKevents" + str(k) + ".csv"
 	events = pd.read_csv(csvFile, header=None, squeeze=True)
 	events = np.array(events)
 
@@ -173,15 +174,17 @@ def sliding(k, w, p, steps, ageingFunction, file, algorithm = "shewhart"):
 	else:
 		precision = (exact/numOfPreds)*100
 	recall = (recallExact/len(events[w-1:]))*100
+	
 	print("Precision is: " + str(precision) + "%")
 	res.write("Precision is: " + str(precision) + "%\n")
 	print("Recall is "+ str(recall) + "%")
 	res.write("Recall is: " + str(recall) + "%\n")
+	
 	os.remove("predictions"+str(get_ident())+".csv")
 
 
 
 if __name__ == "__main__":
 	sliding(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6], sys.argv[7])
-	# sliding(5,3,0.3,3,"linear","slid123456789.txt")
+	# ex. sliding(5,3,0.3,3,"linear","slid123456789.txt")
 	# k,w,p,steps,ageing,file,algorithm
