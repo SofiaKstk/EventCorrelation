@@ -7,21 +7,23 @@ from itertools import chain, combinations
 from math import exp
 from threading import Lock,get_ident
 import os
+import time
 
 mutex = Lock()
 
 def powerset(lst):
     # the power set of the empty set has one element, the empty set
-    result = [[]]
-    for x in lst:
-        result.extend([subset + [x] for subset in result])
-    return result
+	result = chain.from_iterable(combinations(lst, r) for r in range(len(lst)+1))
+	res = list(map(list, result))
+	return res
 
-def linearAgeing(k, n, i):
-	age = - 2*k*(i - 1)/(n - 1) + k + 1
+# k = ageing factor, i = how many steps is the prob active
+def linearAgeing(i):
+	age = 1 - 0.05*i
 	return age
 
-def exponentialAgeing(k, n, i):
+def exponentialAgeing(i):
+	k = 0.05
 	age = exp(-k*i)
 	return age
 
@@ -31,18 +33,17 @@ def sliding(k, w, p, steps, ageingFunction, file, algorithm = "shewhart"):
 	w = int(w)
 	p = float(p)
 	steps = int(steps)
-	columns = pd.read_csv("detectionAlgorithms/DATASET_CMA_CGM_NERVAL_5min.csv",  nrows = 0)
+	columns = pd.read_csv("DATASET_CMA_CGM_NERVAL_5min.csv",  nrows = 0)
 	columns = tuple(columns.iloc[:,:-1])
 	streams = bitset('streams', columns)
 
 	# GET k FIXED EVENT VECTORS
 	res = open(file, "w")
 	res.write("SLIDING WINDOW,\tWINDOW LENGTH "+str(w)+",\tFIXED "+str(k)+",\tPROBABILITY GREATER THAN "+str(p)+",\t"+ algorithm+" ALGORITHM\n,\t"+ageingFunction+" ageing\t")	
-	csvFile = "eventVectors/" + algorithm + "/"	
 	if k == 0:
-		csvFile = csvFile + algorithm + "EventVector.csv"
+		csvFile = algorithm + "EventVector.csv"
 	else:
-		csvFile = csvFile + algorithm + "randomKevents" + str(k) + ".csv"
+		csvFile = algorithm + "randomKevents" + str(k) + ".csv"
 	events = pd.read_csv(csvFile, header=None, squeeze=True)
 	events = np.array(events)
 
@@ -54,11 +55,13 @@ def sliding(k, w, p, steps, ageingFunction, file, algorithm = "shewhart"):
 	# CONSTANTS
 	prevPSets = []
 	prevKeys = []
+	tim = 0
 	# PREPARE UP TO w-1 EVENT VECTORS
 	for i in range(0,w-1):
 		selected = streams.frombits(events[i])
 		pSet = []
-		pSet = powerset(list(selected.members()))
+		
+		pSet = list(powerset(list(selected.members())))
 		if len(pSet) != 1:
 			pSet = pSet[1:]
 		# get the powerset for each event vector and the key for predictions
@@ -72,13 +75,14 @@ def sliding(k, w, p, steps, ageingFunction, file, algorithm = "shewhart"):
 
 	entry = str(prevKeys[w-2])+" 0 0\n"
 	f.write(entry)
-	ageing = (None, 0, 0)
+	ageing = []
 	for event in events[w-1:]:
 		prediction = (None, 0)
 
 		# enter the current event to the table
+		selected=[]
 		selected = streams.frombits(event)
-		currPS = powerset(list(selected.members()))
+		currPS = list(powerset(list(selected.members())))
 		if len(currPS) != 1:
 			currPS = currPS[1:]
 		prevPSets.append(currPS)
@@ -88,21 +92,23 @@ def sliding(k, w, p, steps, ageingFunction, file, algorithm = "shewhart"):
 		powerList = []
 		powerList = list(set([tuple(item) for sublist in prevPSets for item in sublist]))
 
+		start = time.time()
 		# iterate for each couple of sets within the powerset list to get the one that has the maximum probability
 		for k in range(0,len(powerList)):
 
 			# the given set
 			item = list(powerList[k])
-			for l in range(k+1,len(powerList)):
+
+			# start from the first encounter of the given set in the table
+			i = 0
+			while item not in prevPSets[i]:
+				i += 1
+
+			for l in range(k,len(powerList)):
 				
 				# the set that its probability is being calculated currently
 				psItem = list(powerList[l])
 
-				# start from the first encounter of the given set in the table
-				i = 0
-				while item not in prevPSets[i]:
-					i += 1
-				
 				# from there onward, calculate the probability of the set
 				psItemCount = idealCount = 0
 				for j in range(i, w):
@@ -112,22 +118,52 @@ def sliding(k, w, p, steps, ageingFunction, file, algorithm = "shewhart"):
 							if psItem in prevPSets[m]:
 								psItemCount += 1
 				prob = psItemCount/idealCount
-				if prob>1:
-					print("item1 "+str(item)+" item2 "+str(psItem)+" prob "+str(prob))
+
 				# get the maximum probability of all combinations
 				if prob > prediction[1] and prob >= p:
 					prediction = (psItem, prob)
 
+		end = time.time()
+		tim += end-start
+		
 		if prediction[0] != None:
 			prediction = (streams(prediction[0]).bits(), prediction[1])
 			numOfPreds += 1
 
-		# even if it doesn't predict anything, get from previous predictions
-		if ageing[0] != None and ageing[1] > prediction[1]:
-			prediction = (ageing[0], ageing[1])
-			ageing = (ageing[0], ageing[1], 0)
-		if numOfPreds > 2:
-			ageing = (ageing[0], ageing[1]*ageingFun(0.3,numOfPreds-1, ageing[2]), ageing[2]+1)
+		for all previous sets of predictions, check which one is the best
+		if prediction[0] != None:
+
+		if ageing != [] and ageing[0][2] == 20:
+			ageing.pop(0)
+
+		best = (prediction[0], prediction[1])
+		flag = 0
+		temp = (0,0)
+		for r in range(0,len(ageing)):
+			ag = ageing[r]
+			ag = (ag[0], ag[1], ag[2]+1)
+			# if the prediction is included in ???? poio mesa se poio?
+			binPred = int(prediction[0], base=2)
+			binAg = int(ag[0], base=2)
+			if '{0:029b}'.format(binPred & binAg) == ag[0]:
+				flag = r
+				if ag[1]*ageingFun(ag[2]) > prediction[1]:
+					# change both value and prediction?????
+					prediction = (ag[0], ag[1]*ageingFun(ag[2]))
+				# ageing.pop(r)
+				temp = (prediction[0], prediction[1], 0)
+			if ag[1]*ageingFun(ag[2]) > best[1]:
+				best = (ag[0], ag[1]*ageingFun(ag[2]))
+
+		# append first ageing values
+		if ageing == [] or not flag:
+			ageing.append((prediction[0], prediction[1], 0))
+
+		if temp != (0,0):
+			ageing.pop(flag)
+			prediction = temp
+
+
 
 		entry = str(event)+" "+str(prediction[0])+" "+str(prediction[1])+"\n"
 		f.write(entry)
@@ -137,6 +173,8 @@ def sliding(k, w, p, steps, ageingFunction, file, algorithm = "shewhart"):
 
 
 	f.close()
+
+	print(tim)
 
 	
 	results = pd.read_csv("predictions"+str(get_ident())+".csv", delimiter=" ")
@@ -174,17 +212,15 @@ def sliding(k, w, p, steps, ageingFunction, file, algorithm = "shewhart"):
 	else:
 		precision = (exact/numOfPreds)*100
 	recall = (recallExact/len(events[w-1:]))*100
-	
 	print("Precision is: " + str(precision) + "%")
 	res.write("Precision is: " + str(precision) + "%\n")
 	print("Recall is "+ str(recall) + "%")
 	res.write("Recall is: " + str(recall) + "%\n")
-	
 	os.remove("predictions"+str(get_ident())+".csv")
 
 
 
 if __name__ == "__main__":
 	sliding(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6], sys.argv[7])
-	# ex. sliding(5,3,0.3,3,"linear","slid123456789.txt")
+	#example:  sliding(5,3,0.3,3,"linear","slid123456789.txt", "shewhart")
 	# k,w,p,steps,ageing,file,algorithm
